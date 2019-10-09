@@ -16,3 +16,5 @@ ExponentialLR : 지수로 줄임 lr * gamma ^ epoch
 CosineAnnealingLR : SGDR에서 제안하는 cosine annealing인데, restart는 구현되지 않음  
 ReduceLROnPlateau : loss가 업데이트 되지 않으면 lr을 줄임 => scheduler.step()에 loss가 들어가야 함  
 CyclicLR : 주기적으로 lr이 상승했다가 하강  
+
+![graph](./graph.png)
