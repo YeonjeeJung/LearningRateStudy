@@ -2,6 +2,29 @@ from torch.optim.lr_scheduler import _LRScheduler
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import math
 
+class SGDRlinearScheduler(_LRScheduler):
+    def __init__(self, optimizer, T_max, T_mult=1, eta_min=0, last_epoch=-1):
+        self.T_max = T_max
+        self.T_mult = T_mult
+        self.eta_min = eta_min
+        super().__init__(optimizer, last_epoch)
+
+    def get_lr(self):
+#         if not self._get_lr_called_within_step:
+#             warnings.warn("To get the last learning rate computed by the scheduler, "
+#                           "please use `get_last_lr()`.", UserWarning)
+
+        if self.last_epoch == 0:
+            return self.base_lrs
+        
+        elif self.last_epoch % self.T_max == 0:
+            self.last_epoch = 0
+            self.T_max *= self.T_mult
+            return self.base_lrs
+        
+        return [group['lr'] - (base_lr - self.eta_min)/self.T_max
+                for base_lr, group in zip(self.base_lrs, self.optimizer.param_groups)]
+
 class SGDRScheduler(_LRScheduler):
     def __init__(self, optimizer, T_max, T_mult=1, eta_min=0, last_epoch=-1):
         self.T_max = T_max
@@ -14,6 +37,9 @@ class SGDRScheduler(_LRScheduler):
 #             warnings.warn("To get the last learning rate computed by the scheduler, "
 #                           "please use `get_last_lr()`.", UserWarning)
 
+        if self.last_epoch == 0:
+            return self.base_lrs
+        
         if self.last_epoch % self.T_max == 0:
             self.last_epoch = 0
             self.T_max *= self.T_mult
@@ -28,11 +54,6 @@ class SGDRScheduler(_LRScheduler):
                 (1 + math.cos(math.pi * ((self.last_epoch - 1) % self.T_max) / self.T_max)) *
                 (group['lr'] - self.eta_min) + self.eta_min
                 for group in self.optimizer.param_groups]
-
-    def _get_closed_form_lr(self):
-        return [self.eta_min + (base_lr - self.eta_min) *
-                (1 + math.cos(math.pi * self.last_epoch / self.T_max)) / 2
-                for base_lr in self.base_lrs]
 
 class ConstantWarmupScheduler(_LRScheduler):
     def __init__(self, optimizer, warmupLR, total_epoch, after_scheduler=None):

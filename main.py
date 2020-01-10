@@ -15,12 +15,12 @@ import argparse
 # from models import *
 from resnet import ResNet20
 from utils import progress_bar
-from scheduler import ConstantWarmupScheduler, GradualWarmupScheduler, SGDRScheduler
+from scheduler import ConstantWarmupScheduler, GradualWarmupScheduler, SGDRScheduler, SGDRlinearScheduler
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
-parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
+parser.add_argument('--epoches', default=150, type=int, help='train epoches')
 args = parser.parse_args()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -71,14 +71,14 @@ if device == 'cuda':
     net = torch.nn.DataParallel(net)
     cudnn.benchmark = True
 
-if args.resume:
-    # Load checkpoint.
-    print('==> Resuming from checkpoint..')
-    assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    checkpoint = torch.load('./checkpoint/ckpt.pth')
-    net.load_state_dict(checkpoint['net'])
-    best_acc = checkpoint['acc']
-    start_epoch = checkpoint['epoch']
+# if args.resume:
+#     # Load checkpoint.
+#     print('==> Resuming from checkpoint..')
+#     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
+#     checkpoint = torch.load('./checkpoint/ckpt.pth')
+#     net.load_state_dict(checkpoint['net'])
+#     best_acc = checkpoint['acc']
+#     start_epoch = checkpoint['epoch']
 
 warmup_epoches = 5
 criterion = nn.CrossEntropyLoss()
@@ -97,7 +97,7 @@ lr = []
 # for i in range(150):
 #     for group in optimizer.param_groups:
 #         lr.append(group['lr'])
-#     warmup_scheduler.step()
+#     scheduler.step()
 # print('lr=',str(lr))
 
 # Training
@@ -166,7 +166,7 @@ def test(epoch):
         torch.save(state, './checkpoint/ckpt.pth')
         best_acc = acc
 
-for epoch in range(start_epoch, start_epoch+150):
+for epoch in range(start_epoch, start_epoch+args.epoches):
     train(epoch)
     test(epoch)
 
@@ -177,9 +177,11 @@ print('lr=', lr)
 f = open("./result.txt", 'w')
 f.write("train_acc=")
 f.write(str(train_acc))
+f.write("\n")
 
 f.write("test_acc=")
 f.write(str(test_acc))
+f.write("\n")
 
 f.write("lr=")
 f.write(str(lr))
